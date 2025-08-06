@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -15,12 +14,17 @@
 </head>
 <body>
   <div class="container">
-    <h2>Login Absensi Siswa</h2>
-    <label for="nisn">Masukkan NISN:</label>
-    <input type="text" id="nisn" />
-    <button onclick="cekNISN()">Login</button>
-    
+    <h2>Absensi Siswa</h2>
+
+    <label for="siswaSelect">Pilih Nama Siswa:</label>
+    <select id="siswaSelect" onchange="isiDataSiswa()" required>
+      <option value="">-- Pilih Siswa --</option>
+    </select>
+
     <form id="absenForm" style="display:none;" onsubmit="submitAbsen(event)">
+      <label>NISN:</label>
+      <input type="text" id="nisn" readonly />
+
       <label>Nama:</label>
       <input type="text" id="nama" readonly />
 
@@ -53,24 +57,7 @@
 
   <script>
     const scriptURL = "https://script.google.com/macros/s/AKfycbzSayn64EMEvCu5PDlcSxWQZJNOdtJzPX7yQ10TFO-6Pn3QFzQ5HzFWrc1CFD7Zs8tF/exec";
-
-    let siswaData = {};
-
-    function cekNISN() {
-      const nisn = document.getElementById("nisn").value;
-      fetch(scriptURL + "?nisn=" + nisn)
-        .then(res => res.json())
-        .then(data => {
-          if (data.found) {
-            siswaData = data;
-            document.getElementById("absenForm").style.display = "block";
-            document.getElementById("nama").value = data.nama;
-            document.getElementById("kelas").value = data.kelas;
-          } else {
-            alert("NISN tidak ditemukan!");
-          }
-        });
-    }
+    let dataSiswa = [];
 
     function getLocation() {
       if (navigator.geolocation) {
@@ -83,14 +70,38 @@
       }
     }
 
-    window.onload = getLocation;
+    function loadSiswa() {
+      fetch(scriptURL + "?all=true")
+        .then(res => res.json())
+        .then(data => {
+          dataSiswa = data;
+          const select = document.getElementById("siswaSelect");
+          data.forEach(siswa => {
+            const opt = document.createElement("option");
+            opt.value = siswa.nisn;
+            opt.textContent = siswa.nama + " (" + siswa.kelas + ")";
+            select.appendChild(opt);
+          });
+        });
+    }
+
+    function isiDataSiswa() {
+      const nisn = document.getElementById("siswaSelect").value;
+      const siswa = dataSiswa.find(s => s.nisn === nisn);
+      if (siswa) {
+        document.getElementById("absenForm").style.display = "block";
+        document.getElementById("nisn").value = siswa.nisn;
+        document.getElementById("nama").value = siswa.nama;
+        document.getElementById("kelas").value = siswa.kelas;
+      }
+    }
 
     function submitAbsen(e) {
       e.preventDefault();
       const formData = new FormData();
-      formData.append("nisn", siswaData.nisn);
-      formData.append("nama", siswaData.nama);
-      formData.append("kelas", siswaData.kelas);
+      formData.append("nisn", document.getElementById("nisn").value);
+      formData.append("nama", document.getElementById("nama").value);
+      formData.append("kelas", document.getElementById("kelas").value);
       formData.append("mapel", document.getElementById("mapel").value);
       formData.append("materi", document.getElementById("materi").value);
       formData.append("lokasi", document.getElementById("lokasi").value);
@@ -104,6 +115,11 @@
         .then(response => alert("Absen berhasil!"))
         .catch(error => alert("Gagal mengirim absen."));
     }
+
+    window.onload = function () {
+      getLocation();
+      loadSiswa();
+    };
   </script>
 </body>
 </html>
