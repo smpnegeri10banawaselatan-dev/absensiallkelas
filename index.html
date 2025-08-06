@@ -1,120 +1,106 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Absensi Kehadiran Siswa</title>
+  <meta charset="UTF-8" />
+  <title>Absensi Siswa</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f4f4f4;
-    }
-    .container {
-      background: white;
-      max-width: 600px;
-      margin: auto;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px #ccc;
-    }
-    input, select, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-    }
-    video, canvas {
-      width: 100%;
-      border-radius: 8px;
-    }
-    #preview {
-      margin-top: 10px;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+    .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+    video, canvas, img { width: 100%; max-height: 250px; border-radius: 10px; margin-bottom: 10px; }
+    input, select, textarea, button { width: 100%; margin: 5px 0; padding: 10px; border-radius: 5px; }
+    button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>Absensi Kehadiran Siswa</h2>
+    <label>NISN:</label>
+    <input type="text" id="nisn" placeholder="Masukkan NISN" required />
 
-<div class="container">
-  <h2>Absensi Siswa</h2>
+    <label>Mata Pelajaran:</label>
+    <input type="text" id="mapel" placeholder="Contoh: Matematika" required />
 
-  <label for="nisn">Masukkan NISN:</label>
-  <input type="text" id="nisn" placeholder="Contoh: 1234567890" required>
+    <label>Materi:</label>
+    <input type="text" id="materi" placeholder="Materi hari ini" required />
 
-  <label for="mapel">Mata Pelajaran:</label>
-  <input type="text" id="mapel" placeholder="Contoh: Matematika" required>
+    <label>Umpan Balik:</label>
+    <textarea id="umpanBalik" placeholder="Masukkan umpan balik..." rows="3"></textarea>
 
-  <label for="materi">Materi:</label>
-  <input type="text" id="materi" placeholder="Contoh: Persamaan Linear" required>
+    <label>Selfie Kehadiran:</label>
+    <video id="video" autoplay></video>
+    <button onclick="ambilFoto()">Ambil Foto</button>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="preview" src="" alt="Preview Foto" />
 
-  <label for="feedback">Umpan Balik Siswa:</label>
-  <textarea id="feedback" rows="4" placeholder="Tulis pendapat atau kendala..."></textarea>
+    <button onclick="kirimAbsensi()">Kirim Absensi</button>
 
-  <label>Ambil Foto (Wajah):</label>
-  <video id="video" autoplay></video>
-  <button onclick="capturePhoto()">📸 Ambil Foto</button>
-  <canvas id="canvas" style="display:none;"></canvas>
-  <img id="preview" alt="Preview Foto" />
+    <p id="status"></p>
+  </div>
 
-  <button onclick="submitForm()">✅ Kirim Absensi</button>
-</div>
+  <script>
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let preview = document.getElementById('preview');
+    let base64Foto = "";
+    let lokasi = "";
 
-<script>
-  let latitude = "", longitude = "";
+    // Akses kamera
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => { alert("Kamera tidak tersedia."); });
 
-  // Akses Kamera
-  const video = document.getElementById("video");
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => video.srcObject = stream)
-    .catch(err => alert("Gagal akses kamera: " + err));
-
-  // Tangkap lokasi GPS
-  navigator.geolocation.getCurrentPosition(pos => {
-    latitude = pos.coords.latitude;
-    longitude = pos.coords.longitude;
-  }, err => {
-    alert("Gagal akses lokasi: " + err.message);
-  });
-
-  // Tangkap Foto
-  function capturePhoto() {
-    const canvas = document.getElementById("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/png");
-    document.getElementById("preview").src = dataUrl;
-    document.getElementById("preview").style.display = "block";
-  }
-
-  // Kirim Data
-  function submitForm() {
-    const nisn = document.getElementById("nisn").value.trim();
-    const mapel = document.getElementById("mapel").value.trim();
-    const materi = document.getElementById("materi").value.trim();
-    const feedback = document.getElementById("feedback").value.trim();
-    const foto = document.getElementById("canvas").toDataURL("image/png");
-
-    if (!nisn || !mapel || !materi || !latitude || !longitude || !foto) {
-      alert("Mohon lengkapi semua data & izinkan lokasi/kamera.");
-      return;
+    // Ambil lokasi
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        lokasi = `${pos.coords.latitude},${pos.coords.longitude}`;
+      }, () => {
+        lokasi = "Tidak diizinkan";
+      });
     }
 
-    const formData = {
-      nisn, mapel, materi, feedback, latitude, longitude, foto
-    };
+    function ambilFoto() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      base64Foto = canvas.toDataURL('image/png');
+      preview.src = base64Foto;
+    }
 
-    fetch("https://script.google.com/macros/s/AKfycbwi401xAbDD37f08JcDoJMKEjoAwoKQxYULGAJPr4c5igBY1fZmKWr-DWDASdz7-s7r/exec", {
-      method: "POST",
-      body: JSON.stringify(formData)
-    })
-    .then(res => res.text())
-    .then(result => {
-      alert("Absensi berhasil!\n" + result);
-      document.querySelector("form")?.reset();
-    })
-    .catch(err => alert("Gagal kirim absensi: " + err));
-  }
-</script>
+    function kirimAbsensi() {
+      const nisn = document.getElementById('nisn').value.trim();
+      const mapel = document.getElementById('mapel').value.trim();
+      const materi = document.getElementById('materi').value.trim();
+      const umpanBalik = document.getElementById('umpanBalik').value.trim();
 
+      if (!nisn || !mapel || !materi || !base64Foto) {
+        alert("Lengkapi semua data dan ambil foto.");
+        return;
+      }
+
+      const data = {
+        nisn, mapel, materi, umpanBalik,
+        foto: base64Foto,
+        lokasi,
+        waktu: new Date().toLocaleString('id-ID')
+      };
+
+      document.getElementById('status').innerText = "Mengirim data...";
+
+      fetch("https://script.google.com/macros/s/AKfycbx1UwHnqmW3GJjm-5as8NLnfQyPMtMYGD0VO4dssJetQJaD6rWq7RDGbO5RKWnp-gWW/exec", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.text())
+      .then(res => {
+        document.getElementById('status').innerText = "Absensi berhasil dikirim.";
+      })
+      .catch(err => {
+        document.getElementById('status').innerText = "Gagal mengirim absensi.";
+        console.error(err);
+      });
+    }
+  </script>
 </body>
 </html>
