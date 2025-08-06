@@ -1,0 +1,109 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Absensi Siswa</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+    .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+    label { display: block; margin-top: 10px; }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; }
+    button { margin-top: 15px; padding: 10px 15px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Login Absensi Siswa</h2>
+    <label for="nisn">Masukkan NISN:</label>
+    <input type="text" id="nisn" />
+    <button onclick="cekNISN()">Login</button>
+    
+    <form id="absenForm" style="display:none;" onsubmit="submitAbsen(event)">
+      <label>Nama:</label>
+      <input type="text" id="nama" readonly />
+
+      <label>Kelas:</label>
+      <input type="text" id="kelas" readonly />
+
+      <label>Mata Pelajaran:</label>
+      <select id="mapel">
+        <option>Matematika</option>
+        <option>IPA</option>
+        <option>Bahasa Indonesia</option>
+        <option>IPS</option>
+      </select>
+
+      <label>Materi:</label>
+      <input type="text" id="materi" required />
+
+      <label>Ambil Foto:</label>
+      <input type="file" accept="image/*" capture="environment" id="foto" required />
+
+      <label>Lokasi:</label>
+      <input type="text" id="lokasi" readonly />
+
+      <label>Umpan Balik:</label>
+      <textarea id="feedback"></textarea>
+
+      <button type="submit">Kirim Absen</button>
+    </form>
+  </div>
+
+  <script>
+    const scriptURL = "PASTE_YOUR_DEPLOYED_WEB_APP_URL_HERE";
+
+    let siswaData = {};
+
+    function cekNISN() {
+      const nisn = document.getElementById("nisn").value;
+      fetch(scriptURL + "?nisn=" + nisn)
+        .then(res => res.json())
+        .then(data => {
+          if (data.found) {
+            siswaData = data;
+            document.getElementById("absenForm").style.display = "block";
+            document.getElementById("nama").value = data.nama;
+            document.getElementById("kelas").value = data.kelas;
+          } else {
+            alert("NISN tidak ditemukan!");
+          }
+        });
+    }
+
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          const coords = pos.coords.latitude + "," + pos.coords.longitude;
+          document.getElementById("lokasi").value = coords;
+        });
+      } else {
+        alert("Geolocation tidak didukung di browser ini.");
+      }
+    }
+
+    window.onload = getLocation;
+
+    function submitAbsen(e) {
+      e.preventDefault();
+      const formData = new FormData();
+      formData.append("nisn", siswaData.nisn);
+      formData.append("nama", siswaData.nama);
+      formData.append("kelas", siswaData.kelas);
+      formData.append("mapel", document.getElementById("mapel").value);
+      formData.append("materi", document.getElementById("materi").value);
+      formData.append("lokasi", document.getElementById("lokasi").value);
+      formData.append("feedback", document.getElementById("feedback").value);
+      formData.append("foto", document.getElementById("foto").files[0]);
+
+      fetch(scriptURL, {
+        method: "POST",
+        body: formData,
+      })
+        .then(response => alert("Absen berhasil!"))
+        .catch(error => alert("Gagal mengirim absen."));
+    }
+  </script>
+</body>
+</html>
