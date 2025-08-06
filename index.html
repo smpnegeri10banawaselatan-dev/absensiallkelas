@@ -1,130 +1,91 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Absensi Siswa</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Absensi Siswa Otomatis</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      background: white;
-      padding: 20px;
-      margin: auto;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    label {
-      display: block;
-      margin-top: 15px;
-    }
-    input, select, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-    }
-    .success {
-      background: #d4edda;
-      color: #155724;
-      padding: 10px;
-      margin-top: 15px;
-      border-radius: 5px;
-    }
-    .error {
-      background: #f8d7da;
-      color: #721c24;
-      padding: 10px;
-      margin-top: 15px;
-      border-radius: 5px;
-    }
+    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+    .container { background: #fff; padding: 20px; max-width: 600px; margin: auto; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #ccc; }
+    button { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #45a049; }
+    .success { color: green; }
+    .error { color: red; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Absensi Siswa</h2>
+    <h2>Form Absensi Siswa</h2>
     <form id="absensiForm">
-      <label for="nisn">NISN</label>
-      <input type="text" id="nisn" name="NISN" required />
+      <label for="nisn">NISN:</label>
+      <input type="text" id="nisn" name="nisn" required />
 
-      <label for="nama">Nama Lengkap</label>
-      <input type="text" id="nama" name="Nama" readonly />
+      <label for="nama">Nama:</label>
+      <input type="text" id="nama" name="nama" readonly />
 
-      <label for="kelas">Kelas</label>
-      <input type="text" id="kelas" name="Kelas" readonly />
+      <label for="kelas">Kelas:</label>
+      <input type="text" id="kelas" name="kelas" readonly />
 
-      <label for="mapel">Mata Pelajaran</label>
-      <select id="mapel" name="MAPEL" required>
-        <option value="">-- Pilih Mapel --</option>
-        <option>Matematika</option>
-        <option>Informatika</option>
-        <option>IPA</option>
-        <option>Bahasa Indonesia</option>
-      </select>
+      <label for="mapel">Mata Pelajaran:</label>
+      <input type="text" id="mapel" name="mapel" required />
 
-      <label for="materi">Materi</label>
-      <input type="text" id="materi" name="MATERI" required />
+      <label for="materi">Materi:</label>
+      <input type="text" id="materi" name="materi" required />
 
-      <label for="feedback">Umpan Balik</label>
-      <textarea id="feedback" name="UMPAN BALIK" required></textarea>
+      <label for="feedback">Umpan Balik Siswa:</label>
+      <textarea id="feedback" name="feedback" rows="3" required></textarea>
 
-      <button type="submit">Kirim Absensi</button>
+      <button type="submit">Kirim</button>
     </form>
-    <div id="message"></div>
+    <p id="status"></p>
   </div>
 
   <script>
-    const form = document.getElementById('absensiForm');
-    const messageDiv = document.getElementById('message');
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbx1UwHnqmW3GJjm-5as8NLnfQyPMtMYGD0VO4dssJetQJaD6rWq7RDGbO5RKWnp-gWW/exec';
+    const form = document.getElementById("absensiForm");
+    const status = document.getElementById("status");
+    const nisnInput = document.getElementById("nisn");
 
-    document.getElementById('nisn').addEventListener('blur', async function() {
-      const nisn = this.value.trim();
-      if (!nisn) return;
-
-      try {
-        const res = await fetch(`${scriptURL}?action=getSiswa&nisn=${nisn}`);
-        const data = await res.json();
-        if (data && data.nama && data.kelas) {
-          document.getElementById('nama').value = data.nama;
-          document.getElementById('kelas').value = data.kelas;
-          messageDiv.innerHTML = '';
-        } else {
-          document.getElementById('nama').value = '';
-          document.getElementById('kelas').value = '';
-          showMessage("NISN tidak ditemukan dalam database.", true);
-        }
-      } catch (err) {
-        console.error(err);
-        showMessage("Terjadi kesalahan saat mengambil data siswa.", true);
-      }
-    });
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const formData = new FormData(form);
-      try {
-        const response = await fetch(scriptURL, {
-          method: 'POST',
-          body: formData
+    nisnInput.addEventListener("change", () => {
+      const nisn = nisnInput.value;
+      fetch("https://script.google.com/macros/s/AKfycbx1UwHnqmW3GJjm-5as8NLnfQyPMtMYGD0VO4dssJetQJaD6rWq7RDGbO5RKWnp-gWW/exec?nisn=" + nisn)
+        .then(res => res.json())
+        .then(data => {
+          if (data.nama && data.kelas) {
+            document.getElementById("nama").value = data.nama;
+            document.getElementById("kelas").value = data.kelas;
+          } else {
+            document.getElementById("nama").value = "";
+            document.getElementById("kelas").value = "";
+            status.textContent = "NISN tidak ditemukan.";
+            status.className = "error";
+          }
+        })
+        .catch(() => {
+          status.textContent = "Gagal menghubungi server.";
+          status.className = "error";
         });
-
-        const result = await response.text();
-        showMessage("Absensi berhasil dikirim!");
-        form.reset();
-      } catch (error) {
-        console.error('Error!', error.message);
-        showMessage("Gagal mengirim absensi.", true);
-      }
     });
 
-    function showMessage(msg, isError = false) {
-      messageDiv.innerHTML = `<div class="${isError ? 'error' : 'success'}">${msg}</div>`;
-    }
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const data = new FormData(form);
+      fetch("https://script.google.com/macros/s/AKfycbx1UwHnqmW3GJjm-5as8NLnfQyPMtMYGD0VO4dssJetQJaD6rWq7RDGbO5RKWnp-gWW/exec", {
+        method: "POST",
+        body: data,
+      })
+      .then(res => res.text())
+      .then(result => {
+        status.textContent = "Absensi berhasil dikirim!";
+        status.className = "success";
+        form.reset();
+      })
+      .catch(() => {
+        status.textContent = "Gagal mengirim absensi.";
+        status.className = "error";
+      });
+    });
   </script>
 </body>
 </html>
